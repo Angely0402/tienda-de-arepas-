@@ -1,0 +1,192 @@
+// ===== Datos de ejemplo =====
+const perfiles = [
+  { id: 1,  nombre: "Camila Rojas",     edad: 24, ciudad: "Bogotá",       intereses: ["Música", "Cine", "Viajes"],           bio: "Amo los conciertos y descubrir cafés nuevos." },
+  { id: 2,  nombre: "Andrés Gómez",     edad: 28, ciudad: "Medellín",     intereses: ["Videojuegos", "Tecnología", "Anime"], bio: "Dev de día, gamer de noche. Busco equipo para jugar." },
+  { id: 3,  nombre: "Valentina Pérez",  edad: 22, ciudad: "Cali",         intereses: ["Baile", "Música", "Fotografía"],      bio: "Salsera de corazón. Siempre hay un plan de baile." },
+  { id: 4,  nombre: "Santiago Ruiz",    edad: 31, ciudad: "Bogotá",       intereses: ["Ciclismo", "Senderismo", "Viajes"],   bio: "Domingos de ciclovía y montaña. ¿Te animas?" },
+  { id: 5,  nombre: "Laura Martínez",   edad: 26, ciudad: "Barranquilla", intereses: ["Lectura", "Cine", "Cocina"],          bio: "Club de lectura, películas y cocina caribeña." },
+  { id: 6,  nombre: "Daniel Torres",    edad: 20, ciudad: "Medellín",     intereses: ["Fútbol", "Videojuegos", "Música"],    bio: "Hincha del Nacional y FIFA en las noches." },
+  { id: 7,  nombre: "Sofía Herrera",    edad: 29, ciudad: "Cartagena",    intereses: ["Fotografía", "Viajes", "Cocina"],     bio: "Fotografío todo lo que encuentro en mis viajes." },
+  { id: 8,  nombre: "Mateo Castro",     edad: 35, ciudad: "Bogotá",       intereses: ["Tecnología", "Lectura", "Ajedrez"],   bio: "Ajedrez, libros y charlas largas con café." },
+  { id: 9,  nombre: "Isabella Vargas",  edad: 23, ciudad: "Cali",         intereses: ["Anime", "Dibujo", "Videojuegos"],     bio: "Dibujo fanart y busco gente para ir a convenciones." },
+  { id: 10, nombre: "Juan Pablo León",  edad: 27, ciudad: "Medellín",     intereses: ["Senderismo", "Fotografía", "Ciclismo"], bio: "Explorando los rincones de Antioquia en bici." },
+  { id: 11, nombre: "María Fernanda",   edad: 33, ciudad: "Barranquilla", intereses: ["Baile", "Cocina", "Música"],          bio: "Carnaval todo el año. Buen sazón y buena música." },
+  { id: 12, nombre: "Nicolás Díaz",     edad: 25, ciudad: "Cartagena",    intereses: ["Fútbol", "Cine", "Viajes"],           bio: "Cinéfilo y futbolero. Siempre listo para un plan." }
+];
+
+// Intereses del "usuario actual" (para resaltar coincidencias)
+// Puedes cambiarlos para probar.
+const misIntereses = ["Música", "Viajes", "Videojuegos"];
+
+// ===== Estado =====
+const estado = {
+  texto: "",
+  ciudad: "",
+  edadMin: null,
+  edadMax: null,
+  intereses: new Set(),
+  solicitudes: new Set()
+};
+
+// ===== Referencias al DOM =====
+const $buscador   = document.getElementById("buscador");
+const $ciudad     = document.getElementById("ciudad");
+const $edadMin    = document.getElementById("edadMin");
+const $edadMax    = document.getElementById("edadMax");
+const $chips      = document.getElementById("chips-intereses");
+const $lista      = document.getElementById("lista-perfiles");
+const $vacio      = document.getElementById("mensaje-vacio");
+const $cantidad   = document.getElementById("cantidad-resultados");
+const $contador   = document.getElementById("contador-solicitudes");
+const $btnLimpiar = document.getElementById("btn-limpiar");
+
+// ===== Utilidades =====
+const colores = ["#7c5cff", "#3d8bff", "#e0527a", "#f09a3e", "#2eb88a", "#b24cd6"];
+
+function iniciales(nombre) {
+  return nombre.split(" ").slice(0, 2).map(p => p[0]).join("").toUpperCase();
+}
+
+function colorAvatar(id) {
+  return colores[id % colores.length];
+}
+
+function normalizar(texto) {
+  return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+// ===== Inicialización de filtros =====
+function cargarCiudades() {
+  const ciudades = [...new Set(perfiles.map(p => p.ciudad))].sort();
+  ciudades.forEach(c => {
+    const op = document.createElement("option");
+    op.value = c;
+    op.textContent = c;
+    $ciudad.appendChild(op);
+  });
+}
+
+function cargarChips() {
+  const todos = [...new Set(perfiles.flatMap(p => p.intereses))].sort();
+  todos.forEach(interes => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip";
+    btn.textContent = interes;
+    btn.addEventListener("click", () => {
+      if (estado.intereses.has(interes)) {
+        estado.intereses.delete(interes);
+        btn.classList.remove("activo");
+      } else {
+        estado.intereses.add(interes);
+        btn.classList.add("activo");
+      }
+      render();
+    });
+    $chips.appendChild(btn);
+  });
+}
+
+// ===== Filtrado =====
+function filtrarPerfiles() {
+  const texto = normalizar(estado.texto.trim());
+
+  return perfiles.filter(p => {
+    if (texto && !normalizar(p.nombre).includes(texto)) return false;
+    if (estado.ciudad && p.ciudad !== estado.ciudad) return false;
+    if (estado.edadMin !== null && p.edad < estado.edadMin) return false;
+    if (estado.edadMax !== null && p.edad > estado.edadMax) return false;
+
+    // Debe tener TODOS los intereses seleccionados
+    for (const i of estado.intereses) {
+      if (!p.intereses.includes(i)) return false;
+    }
+    return true;
+  });
+}
+
+// ===== Render =====
+function crearTarjeta(p) {
+  const enviada = estado.solicitudes.has(p.id);
+
+  const tarjeta = document.createElement("article");
+  tarjeta.className = "tarjeta";
+
+  const tags = p.intereses.map(i => {
+    const comun = misIntereses.includes(i) ? " en-comun" : "";
+    return `<span class="tag${comun}">${i}</span>`;
+  }).join("");
+
+  tarjeta.innerHTML = `
+    <div class="tarjeta-cabecera">
+      <div class="avatar" style="background:${colorAvatar(p.id)}">${iniciales(p.nombre)}</div>
+      <div>
+        <h3>${p.nombre}</h3>
+        <div class="meta">${p.edad} años · ${p.ciudad}</div>
+      </div>
+    </div>
+    <p class="bio">${p.bio}</p>
+    <div class="tags">${tags}</div>
+    <button class="btn ${enviada ? "btn-enviado" : "btn-primario"}" data-id="${p.id}">
+      ${enviada ? "Solicitud enviada ✓" : "Conectar"}
+    </button>
+  `;
+
+  tarjeta.querySelector("button").addEventListener("click", () => alternarSolicitud(p.id));
+  return tarjeta;
+}
+
+function alternarSolicitud(id) {
+  if (estado.solicitudes.has(id)) {
+    estado.solicitudes.delete(id);
+  } else {
+    estado.solicitudes.add(id);
+  }
+  render();
+}
+
+function render() {
+  const resultados = filtrarPerfiles();
+
+  $lista.innerHTML = "";
+  resultados.forEach(p => $lista.appendChild(crearTarjeta(p)));
+
+  $vacio.classList.toggle("oculto", resultados.length > 0);
+  $cantidad.textContent = `${resultados.length} ${resultados.length === 1 ? "persona" : "personas"}`;
+
+  const n = estado.solicitudes.size;
+  $contador.textContent = `${n} ${n === 1 ? "solicitud enviada" : "solicitudes enviadas"}`;
+}
+
+// ===== Eventos =====
+$buscador.addEventListener("input", e => { estado.texto = e.target.value; render(); });
+$ciudad.addEventListener("change", e => { estado.ciudad = e.target.value; render(); });
+
+$edadMin.addEventListener("input", e => {
+  estado.edadMin = e.target.value === "" ? null : Number(e.target.value);
+  render();
+});
+$edadMax.addEventListener("input", e => {
+  estado.edadMax = e.target.value === "" ? null : Number(e.target.value);
+  render();
+});
+
+$btnLimpiar.addEventListener("click", () => {
+  estado.texto = "";
+  estado.ciudad = "";
+  estado.edadMin = null;
+  estado.edadMax = null;
+  estado.intereses.clear();
+
+  $buscador.value = "";
+  $ciudad.value = "";
+  $edadMin.value = "";
+  $edadMax.value = "";
+  document.querySelectorAll(".chip.activo").forEach(c => c.classList.remove("activo"));
+  render();
+});
+
+// ===== Arranque =====
+cargarCiudades();
+cargarChips();
+render();

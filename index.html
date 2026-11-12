@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AmiGo - Encuentra amigos</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">Ami<span>Go</span></div>
+    <div class="topbar-right">
+      <span class="badge" id="contador-solicitudes">0 solicitudes enviadas</span>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <section class="hero">
+      <h1>Encuentra gente con tus mismos gustos</h1>
+      <p>Busca por nombre, ciudad, edad o intereses y conecta con nuevos amigos.</p>
+    </section>
+
+    <section class="filtros">
+      <div class="campo campo-grande">
+        <label for="buscador">Nombre</label>
+        <input type="text" id="buscador" placeholder="Ej: Camila, Andrés...">
+      </div>
+
+      <div class="campo">
+        <label for="ciudad">Ciudad</label>
+        <select id="ciudad">
+          <option value="">Todas</option>
+        </select>
+      </div>
+
+      <div class="campo campo-edad">
+        <label for="edadMin">Edad</label>
+        <div class="rango">
+          <input type="number" id="edadMin" min="18" max="99" placeholder="Min">
+          <span>-</span>
+          <input type="number" id="edadMax" min="18" max="99" placeholder="Max">
+        </div>
+      </div>
+
+      <div class="campo campo-completo">
+        <label>Intereses</label>
+        <div class="chips" id="chips-intereses"></div>
+      </div>
+
+      <div class="acciones-filtros">
+        <button id="btn-limpiar" class="btn btn-secundario">Limpiar filtros</button>
+      </div>
+    </section>
+
+    <section class="resultados-header">
+      <h2 id="titulo-resultados">Resultados</h2>
+      <span id="cantidad-resultados" class="muted"></span>
+    </section>
+
+    <section class="grid" id="lista-perfiles"></section>
+
+    <p class="vacio oculto" id="mensaje-vacio">
+      No encontramos perfiles con esos filtros. Prueba quitando alguno.
+    </p>
+  </main>
+
+  <footer class="footer">Prototipo con perfiles de ejemplo</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
